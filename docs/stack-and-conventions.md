@@ -8,6 +8,7 @@
 - **Forms:** TanStack Form + Zod (`useAppForm` composition hook from `packages/ui`)
 - **Styling:** Tailwind CSS v4
 - **Database:** Neon serverless (`@neondatabase/serverless` WebSocket Pool) + Drizzle ORM
+- **Browser persistence:** WA-SQLite on OPFS. See [Browser persistence](#browser-persistence) and [ADR 0009](adr/0009-browser-persistence-scope.md).
 - **Auth:** Clerk (org-based tenancy)
 - **API:** Hono (`apps/api`)
 - **Telemetry:** Vendor-neutral `@ploutizo/telemetry` contract (typed catalog + flat operation-scoped attributes, correlation IDs, local adapters). Callers omit sensitive fields; the package does not runtime-sanitize attribute bags. Web and API adapters implement the contract separately — see [ADR 0006](adr/0006-cross-stack-telemetry.md).
@@ -19,9 +20,24 @@
 - All data fetching in `apps/web` uses TanStack Query hooks from `apps/web/src/lib/data-access/`. Never add raw `fetch()` calls to components. All API requests go through `apiFetch` (with a response schema) or `apiSend`, never raw `fetch()` — see [Response contracts](#response-contracts).
 - Form state always uses `useAppForm` from `@ploutizo/ui/components/form` (TanStack Form + Zod). Never use `useState` for form field values.
 - `packages/db` uses `@neondatabase/serverless` WebSocket Pool (not postgres.js). Set `neonConfig.webSocketConstructor` before constructing the Pool.
-- Client-side persistence in `apps/web` must use Zustand stores in `@/lib/prefs/` for localStorage-backed prefs and `@/lib/prefs/sessionPref` for ephemeral sessionStorage prefs. Never call `localStorage`/`sessionStorage` directly in components or hooks. Exception: theme via next-themes. Key naming: `ploutizo:{feature}:{preference}`.
+- Client-side preferences in `apps/web` must use Zustand stores in `@/lib/prefs/` for localStorage-backed prefs and `@/lib/prefs/sessionPref` for ephemeral sessionStorage prefs. Never call `localStorage`/`sessionStorage` directly in components or hooks. Exception: theme via next-themes. Key naming: `ploutizo:{feature}:{preference}`. Household data that survives a reload uses the OPFS database in [Browser persistence](#browser-persistence).
 - Exception: a preference the server must read for the first render (so SSR matches the client) is a cookie, read with `createIsomorphicFn` (`getCookie` on the server, `document.cookie` on the client) and written from one module per feature. Example: the dashboard period in `@/lib/dashboard-period/cookie.ts`.
 - API middleware order is invariant: **CORS → request telemetry → Clerk → tenant guard** (see `apps/api/src/index.ts`). Request telemetry owns `X-Request-Id` and one wide `api.request.complete` record per request.
+
+## Browser persistence
+
+Household data that must survive a reload lives in one OPFS database per **signed-in member** and **active household**. The access working set owns that connection ([ADR 0007](adr/0007-access-snapshot-and-household-principal.md), [ADR 0009](adr/0009-browser-persistence-scope.md)).
+
+- Packages are pinned: `@tanstack/browser-db-sqlite-persistence` 0.2.37 and `@journeyapps/wa-sqlite` 1.5.0. Do not take the 1.0.0-rc persistence line.
+- Open with `openBrowserWASQLiteOPFSDatabase`. That uses `OPFSCoopSyncVFS`. Do not send COOP or COEP, and do not require `crossOriginIsolated` or `SharedArrayBuffer`.
+- The database opens in the browser only. `syncBrowserPersistence` returns without opening while `import.meta.env.SSR` is true, and it does not run until Clerk has loaded. A loading render looks signed out and must not wipe the file.
+- Vite excludes `@tanstack/browser-db-sqlite-persistence` from `optimizeDeps`. Prebundling rewrites the published OPFS worker URL. The SSR build externalizes the package so the worker stays out of the server bundle. `wa-sqlite`'s postinstall stays disabled; the published worker vendors its wasm.
+- The file is `ploutizo-offline/<signed-in member id>/<active household id>.sqlite`. Ids that are not `[A-Za-z0-9_-]` do not get a database.
+- Switching signed-in member or active household closes the connection and opens the other file. The previous file stays, so returning to that household can hydrate again. It is never opened for a different member or household.
+- Sign-out, and a session that resolves as signed out, deletes the whole `ploutizo-offline` directory after the connection closes. That includes every household visited on this origin.
+- `BrowserCollectionCoordinator` is created with the database path as `dbName`. Two tabs on the same member and household share one file and one leader. There is no installed-app branch.
+- Collections opt in by passing `await currentBrowserPersistence()` to `persistedCollectionOptions` as `persistence`, with a stable `id` and a `schemaVersion`. `null` means there is no active household or this browser cannot open OPFS; do not invent a second database. Import review stays online-only.
+- A collection does not close the database. On working-set replacement, register `trackBrowserPersistenceRelease` synchronously from `working-set-cleanup.ts` with the promise that resolves after live-query subscribers leave and `collection.cleanup()` finishes.
 
 ## Response contracts
 

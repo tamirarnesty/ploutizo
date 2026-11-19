@@ -17,8 +17,8 @@ const config = defineConfig({
   plugins: [
     devtools(),
     nitro({
-      // No COOP or COEP. Later OPFS persistence uses OPFSCoopSyncVFS and
-      // must not require cross-origin isolation.
+      // No COOP or COEP. OPFS persistence uses OPFSCoopSyncVFS and must not
+      // require cross-origin isolation.
       routeRules: ploutizoPwaNitroRouteRules(),
     }),
     tailwindcss(),
@@ -35,7 +35,20 @@ const config = defineConfig({
     ...ploutizoPwaPlugins(webRoot),
   ],
   optimizeDeps: {
-    exclude: ['@clerk/ui'],
+    exclude: [
+      '@clerk/ui',
+      // Prebundling rewrites the published OPFS worker URL and breaks wa-sqlite.
+      '@tanstack/browser-db-sqlite-persistence',
+    ],
+  },
+  ssr: {
+    // The access shell imports the persistence module. Leave the worker out of
+    // the server bundle; the database opens only in the browser.
+    external: [
+      '@tanstack/browser-db-sqlite-persistence',
+      '@tanstack/db-sqlite-persistence-core',
+      '@journeyapps/wa-sqlite',
+    ],
   },
   resolve: {
     tsconfigPaths: true,

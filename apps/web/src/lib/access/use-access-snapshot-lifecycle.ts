@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useReducer, useRef } from 'react';
+import { syncBrowserPersistence } from '@/lib/persistence/browser-persistence';
 import { hasAccessIdentityChanged } from './access-key';
 import { resolveTransitionBearer } from './resolve-transition-bearer';
 import { replaceActiveWorkingSet } from './working-set-registry';
@@ -59,6 +60,7 @@ export const useAccessSnapshotLifecycle = ({
 }: UseAccessSnapshotLifecycleInput) => {
   const [readiness, dispatch] = useReducer(readinessReducer, initialReadiness);
   const previousAccessKeyRef = useRef<string | undefined>(undefined);
+  const syncedAccessKeyRef = useRef<string | null>(null);
 
   const identityChanged = hasAccessIdentityChanged(
     previousAccessKeyRef.current,
@@ -96,6 +98,13 @@ export const useAccessSnapshotLifecycle = ({
     setLiveAccess(access);
     setClientBearerGetter(access.status === 'signed-out' ? null : getToken);
     previousAccessKeyRef.current = currentAccessKey;
+
+    // A Clerk load looks signed out. Syncing then would wipe the database
+    // before the signed-in member is known. Sync only a resolved access key.
+    if (syncedAccessKeyRef.current !== currentAccessKey) {
+      syncedAccessKeyRef.current = currentAccessKey;
+      void syncBrowserPersistence(access);
+    }
 
     if (access.status === 'signed-out') {
       dispatch({ type: 'signed-out-ready' });
