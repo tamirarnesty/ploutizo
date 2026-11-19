@@ -19,18 +19,25 @@ export type TransactionRowAction = {
 
 export const getTransactionRowActions = (
   transaction: TransactionRow,
-  handlers: TransactionRowActionHandlers
+  handlers: TransactionRowActionHandlers,
+  writesBlocked = false
 ): TransactionRowAction[] => [
   {
     id: 'edit',
-    label: 'Edit',
+    label: writesBlocked ? 'Edit unavailable offline' : 'Edit',
     variant: 'default',
-    onSelect: () => handlers.onEdit(transaction),
+    disabled: writesBlocked || undefined,
+    onSelect: () => {
+      if (!writesBlocked) handlers.onEdit(transaction);
+    },
   },
   {
     id: 'delete',
-    label: 'Delete',
+    label: writesBlocked ? 'Delete unavailable offline' : 'Delete',
     variant: 'destructive',
-    onSelect: () => handlers.onDelete(transaction.id),
+    disabled: writesBlocked || undefined,
+    onSelect: () => {
+      if (!writesBlocked) handlers.onDelete(transaction.id);
+    },
   },
 ];

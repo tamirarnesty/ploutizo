@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { dataEnvelope, orgMemberSchema } from '@ploutizo/validators';
 import type { OrgMember } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
+import { useOfflineReadableQuery } from '@/lib/offline/offline-query';
+import { readHouseholdMembers } from '@/lib/offline/offline-read-store';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -22,6 +24,9 @@ export const householdMembersQueryOptions = queryOptions({
   queryFn: ({ signal }) => fetchHouseholdMembers(signal),
 });
 
-export const useGetHouseholdMembers = (): UseQueryResult<OrgMember[]> => {
-  return useHouseholdQuery(householdMembersQueryOptions);
+export const useGetHouseholdMembers = (): UseQueryResult<OrgMember[]> & {
+  offlineUnavailable: boolean;
+} => {
+  const query = useHouseholdQuery(householdMembersQueryOptions);
+  return useOfflineReadableQuery(query, readHouseholdMembers);
 };

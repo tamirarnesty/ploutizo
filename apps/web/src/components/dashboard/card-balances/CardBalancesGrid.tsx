@@ -20,6 +20,7 @@ export const CardBalancesGrid = ({
   rows,
   isLoading,
   isError,
+  unavailable = false,
   onSettleClick,
   className,
 }: CardBalancesGridProps) => {
@@ -56,6 +57,7 @@ export const CardBalancesGrid = ({
       title="Card Balances"
       errorResource="card balances"
       isError={isError}
+      unavailable={unavailable}
       action={
         isError || isEmpty ? undefined : (
           <CardBalancesTotal cents={balanceTotalCents} isLoading={isLoading} />

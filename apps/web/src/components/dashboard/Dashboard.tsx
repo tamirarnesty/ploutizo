@@ -1,7 +1,13 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import { toast } from '@ploutizo/ui/components/sonner-api';
 import { Page } from '@ploutizo/ui/components/page';
 import type { OrgMember } from '@ploutizo/validators';
+import { OFFLINE_WRITES_MESSAGE } from '@/lib/offline/offline-copy';
+import {
+  getBrowserOfflineServerSnapshot,
+  getBrowserOfflineSnapshot,
+  subscribeBrowserOnline,
+} from '@/lib/offline/browser-online';
 import type { PayToward } from '@/components/dashboard/settleFormSchema';
 import type { CardBalanceRowViewModel } from '@/components/dashboard/card-balances/buildCardBalanceViewModels';
 import type { CardBalancesSettleClickHandler } from '@/components/dashboard/card-balances/types';
@@ -34,6 +40,11 @@ export const Dashboard = () => {
     applyCustomRange,
     selectSpendTrendMode,
   } = useDashboardSearch();
+  const offline = useSyncExternalStore(
+    subscribeBrowserOnline,
+    getBrowserOfflineSnapshot,
+    getBrowserOfflineServerSnapshot
+  );
   const overviewQuery = useGetDashboardOverview(period);
   const { refetch: refetchOverview } = overviewQuery;
   const {
@@ -41,6 +52,7 @@ export const Dashboard = () => {
     isError: settlementsError,
     isFetching: settlementsFetching,
     isPending: settlementsPending,
+    offlineUnavailable: settlementsUnavailable,
     refetch: refetchSettlements,
   } = useGetSettlements();
   const {
@@ -48,6 +60,7 @@ export const Dashboard = () => {
     isError: membersError,
     isFetching: membersFetching,
     isPending: membersPending,
+    offlineUnavailable: membersUnavailable,
     refetch: refetchMembers,
   } = useGetHouseholdMembers();
   const recentTransactionsQuery = useDashboardRecentTransactions();
@@ -71,12 +84,14 @@ export const Dashboard = () => {
           isError: settlementsError,
           isFetching: settlementsFetching,
           isPending: settlementsPending,
+          offlineUnavailable: settlementsUnavailable,
         },
         {
           data: membersData,
           isError: membersError,
           isFetching: membersFetching,
           isPending: membersPending,
+          offlineUnavailable: membersUnavailable,
         },
       ],
       { busyWhileRefetching: false }
@@ -101,11 +116,15 @@ export const Dashboard = () => {
 
   const handleSettleClick = useCallback<CardBalancesSettleClickHandler>(
     (account, payToward) => {
+      if (offline) {
+        toast.error(OFFLINE_WRITES_MESSAGE);
+        return;
+      }
       setActiveAccount(account);
       setDialogPayToward(payToward);
       setDialogOpen(true);
     },
-    []
+    [offline]
   );
 
   const handleClose = useCallback(() => {
@@ -142,6 +161,7 @@ export const Dashboard = () => {
         onApplyCustomRange={applyCustomRange}
         onRefresh={handleRefresh}
         isRefreshing={isRefreshing || liveSectionsLoading}
+        offline={offline}
       />
 
       {/*
@@ -167,6 +187,7 @@ export const Dashboard = () => {
           rows={cardBalanceRows}
           isLoading={liveSectionsLoading}
           isError={liveSectionsError}
+          unavailable={settlementsUnavailable || membersUnavailable}
           onSettleClick={handleSettleClick}
         />
         <SettlementSummaryPane
@@ -174,6 +195,7 @@ export const Dashboard = () => {
           accounts={settlements?.accounts}
           isError={liveSectionsError}
           isLoading={liveSectionsLoading}
+          unavailable={settlementsUnavailable || membersUnavailable}
           members={members}
         />
         <RecentTransactionsCard query={recentTransactionsQuery} />

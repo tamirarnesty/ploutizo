@@ -38,4 +38,23 @@ describe('getTransactionRowActions', () => {
     expect(onDelete).toHaveBeenCalledTimes(1);
     expect(onDelete).toHaveBeenCalledWith(transaction.id);
   });
+
+  it('disables Edit and Delete while writes are blocked offline', () => {
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    const actions = getTransactionRowActions(
+      mockTransactionRow(),
+      { onEdit, onDelete },
+      true
+    );
+
+    expect(actions.map((action) => action.label)).toEqual([
+      'Edit unavailable offline',
+      'Delete unavailable offline',
+    ]);
+    expect(actions.every((action) => action.disabled)).toBe(true);
+    for (const action of actions) action.onSelect();
+    expect(onEdit).not.toHaveBeenCalled();
+    expect(onDelete).not.toHaveBeenCalled();
+  });
 });

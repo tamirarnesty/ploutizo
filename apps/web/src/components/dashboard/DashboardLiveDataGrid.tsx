@@ -23,6 +23,7 @@ type DashboardLiveDataGridProps<TData extends object> = {
   /** Lowercase resource phrase for the error message, e.g. "card balances". */
   errorResource: string;
   isError: boolean;
+  unavailable?: boolean;
   action?: ReactNode;
   className?: string;
   tableClassNames?: DataGridProps<DataGridFeatures, TData>['tableClassNames'];
@@ -36,6 +37,7 @@ export const DashboardLiveDataGrid = <TData extends object>({
   title,
   errorResource,
   isError,
+  unavailable = false,
   action,
   className,
   tableClassNames,
@@ -56,6 +58,7 @@ export const DashboardLiveDataGrid = <TData extends object>({
       action={action}
       isLoading={isLoading}
       isError={isError}
+      unavailable={unavailable}
       errorMessage={dashboardLiveCardErrorMessage(errorResource)}
       className={className}
     >

@@ -31,9 +31,12 @@ export const RecentTransactionsCard = ({
   query,
 }: RecentTransactionsCardProps) => {
   const { data } = query;
-  const { showError, isBusy } = getDashboardQueryLiveState(query, {
-    busyWhileRefetching: false,
-  });
+  const { showError, isBusy, offlineUnavailable } = getDashboardQueryLiveState(
+    query,
+    {
+      busyWhileRefetching: false,
+    }
+  );
 
   const rows = data?.data ?? EMPTY_TRANSACTION_ROWS;
   const recentLimit = DASHBOARD_RECENT_TRANSACTIONS_PARAMS.limit;
@@ -67,6 +70,7 @@ export const RecentTransactionsCard = ({
       title="Recent transactions"
       errorResource="recent transactions"
       isError={showError}
+      unavailable={offlineUnavailable}
       action={
         <CardAction className="row-span-1 self-center">
           <Button

@@ -2,6 +2,8 @@ import { queryOptions } from '@tanstack/react-query';
 import { settlementBalancesResponseSchema } from '@ploutizo/validators';
 import type { GetSettlementBalancesResponse } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
+import { useOfflineReadableQuery } from '@/lib/offline/offline-query';
+import { readSettlements } from '@/lib/offline/offline-read-store';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -16,6 +18,9 @@ export const settlementsQueryOptions = queryOptions({
 });
 
 export const useGetSettlements =
-  (): UseQueryResult<GetSettlementBalancesResponse> => {
-    return useHouseholdQuery(settlementsQueryOptions);
+  (): UseQueryResult<GetSettlementBalancesResponse> & {
+    offlineUnavailable: boolean;
+  } => {
+    const query = useHouseholdQuery(settlementsQueryOptions);
+    return useOfflineReadableQuery(query, readSettlements);
   };

@@ -10,6 +10,7 @@ import {
 } from '@/lib/access/working-set-registry';
 import { HouseholdHookWrapper } from '@/test/household-hook-harness';
 
+import { setBrowserOnlineForTests } from '@/lib/offline/browser-online';
 import { useHouseholdMutation } from '@/lib/data-access/useHouseholdQuery';
 import type { HouseholdMutationFunctionContext } from '@/lib/data-access/useHouseholdQuery';
 
@@ -48,6 +49,28 @@ describe('useHouseholdMutation working-set scope', () => {
     });
 
     expect(mutationFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not run mutationFn while the browser is offline', async () => {
+    setBrowserOnlineForTests(false);
+    const mutationFn = vi.fn(async () => 'ok');
+
+    const { result } = renderHook(
+      () =>
+        useHouseholdMutation({
+          mutationFn,
+        }),
+      { wrapper: HouseholdHookWrapper }
+    );
+
+    await act(async () => {
+      await expect(result.current.mutateAsync()).rejects.toMatchObject({
+        name: 'OfflineWriteUnavailableError',
+      });
+    });
+
+    expect(mutationFn).not.toHaveBeenCalled();
+    setBrowserOnlineForTests(null);
   });
 
   it('does not run mutationFn after a household switch during async onMutate', async () => {

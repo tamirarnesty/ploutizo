@@ -3,6 +3,8 @@ import { dashboardOverviewResponseSchema } from '@ploutizo/validators';
 import type { ResolvedDashboardPeriod } from '@ploutizo/utils/dashboard-period';
 import type { GetDashboardOverviewResponse } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
+import { useOfflineReadableQuery } from '@/lib/offline/offline-query';
+import { readDashboardPeriod } from '@/lib/offline/offline-read-store';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -42,5 +44,9 @@ export const dashboardOverviewQueryOptions = (
 
 export const useGetDashboardOverview = (
   period: ResolvedDashboardPeriod
-): UseQueryResult<GetDashboardOverviewResponse> =>
-  useHouseholdQuery(dashboardOverviewQueryOptions(period));
+): UseQueryResult<GetDashboardOverviewResponse> & {
+  offlineUnavailable: boolean;
+} => {
+  const query = useHouseholdQuery(dashboardOverviewQueryOptions(period));
+  return useOfflineReadableQuery(query, () => readDashboardPeriod(period));
+};

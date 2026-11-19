@@ -6,6 +6,7 @@ import {
 } from '@ploutizo/ui/components/card';
 import { Text } from '@ploutizo/ui/components/text';
 import { cn } from '@ploutizo/ui/lib/utils';
+import { OfflineUnavailable } from '@/lib/offline/OfflineUnavailable';
 import type { ReactNode } from 'react';
 
 type DashboardCardProps = {
@@ -17,6 +18,8 @@ type DashboardCardProps = {
   isBusy: boolean;
   /** When set, replaces the body with an alert. Recovery is the single header Refresh. */
   error?: string;
+  /** Saved copy is missing. This is not an error and not a spinner. */
+  unavailable?: boolean;
   className?: string;
   children: ReactNode;
 };
@@ -28,6 +31,7 @@ export const DashboardCard = ({
   header,
   isBusy,
   error,
+  unavailable = false,
   className,
   children,
 }: DashboardCardProps) => (
@@ -39,7 +43,9 @@ export const DashboardCard = ({
       </CardTitle>
       {header}
     </CardHeader>
-    {error === undefined ? (
+    {unavailable ? (
+      <OfflineUnavailable />
+    ) : error === undefined ? (
       children
     ) : (
       <CardContent className="px-3.5 py-6">

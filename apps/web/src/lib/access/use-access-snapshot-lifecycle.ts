@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useReducer, useRef } from 'react';
+import { hydrateOfflineRead } from '@/lib/offline/offline-collections';
 import { syncBrowserPersistence } from '@/lib/persistence/browser-persistence';
 import { hasAccessIdentityChanged } from './access-key';
-import { resolveTransitionBearer } from './resolve-transition-bearer';
+import { claimsMatchAccess } from './bearer-claims';
 import { replaceActiveWorkingSet } from './working-set-registry';
 import { setClientBearerGetter, setLiveAccess } from './working-set';
 import type { AccessState } from './access-state';
@@ -49,6 +50,15 @@ type UseAccessSnapshotLifecycleInput = {
   currentAccessKey: string;
   getToken: (options?: { skipCache?: boolean }) => Promise<string | null>;
   retryCount: number;
+  /** Skip Clerk while the device is offline. */
+  offline?: boolean;
+  /**
+   * The member already opened this household from local data. A missing token
+   * once the network is back means the session expired.
+   */
+  revalidateOfflineLaunch?: boolean;
+  onSessionExpired?: () => void;
+  onOfflineLaunchValidated?: () => void;
 };
 
 export const useAccessSnapshotLifecycle = ({
@@ -57,6 +67,10 @@ export const useAccessSnapshotLifecycle = ({
   currentAccessKey,
   getToken,
   retryCount,
+  offline = false,
+  revalidateOfflineLaunch = false,
+  onSessionExpired,
+  onOfflineLaunchValidated,
 }: UseAccessSnapshotLifecycleInput) => {
   const [readiness, dispatch] = useReducer(readinessReducer, initialReadiness);
   const previousAccessKeyRef = useRef<string | undefined>(undefined);
@@ -96,14 +110,31 @@ export const useAccessSnapshotLifecycle = ({
     }
 
     setLiveAccess(access);
-    setClientBearerGetter(access.status === 'signed-out' ? null : getToken);
+    setClientBearerGetter(
+      offline || access.status === 'signed-out' ? null : getToken
+    );
     previousAccessKeyRef.current = currentAccessKey;
 
     // A Clerk load looks signed out. Syncing then would wipe the database
     // before the signed-in member is known. Sync only a resolved access key.
-    if (syncedAccessKeyRef.current !== currentAccessKey) {
+    // Offline signed-out is not a resolved sign-out: the remembered household
+    // stays on disk until an online check says the session is gone.
+    const wipe = access.status === 'signed-out' && !offline;
+    if (
+      syncedAccessKeyRef.current !== currentAccessKey &&
+      (access.status !== 'signed-out' || wipe)
+    ) {
       syncedAccessKeyRef.current = currentAccessKey;
       void syncBrowserPersistence(access);
+    }
+
+    if (access.status === 'signed-in-with-active-household') {
+      void hydrateOfflineRead();
+    }
+
+    if (offline && access.status === 'signed-in-with-active-household') {
+      dispatch({ type: 'bearer-ready' });
+      return;
     }
 
     if (access.status === 'signed-out') {
@@ -114,28 +145,40 @@ export const useAccessSnapshotLifecycle = ({
     if (didIdentityChange) {
       dispatch({ type: 'identity-transition' });
     }
-  }, [isLoaded, access, currentAccessKey, getToken]);
+  }, [isLoaded, access, currentAccessKey, getToken, offline]);
 
   useEffect(() => {
-    if (import.meta.env.SSR || !isLoaded || access.status === 'signed-out') {
+    if (
+      import.meta.env.SSR ||
+      !isLoaded ||
+      offline ||
+      access.status === 'signed-out'
+    ) {
       return;
     }
 
     let cancelled = false;
     const validateToken = async () => {
       try {
-        const token = await resolveTransitionBearer(getToken, access);
-        if (cancelled) {
+        const token = await getToken({ skipCache: true });
+        if (cancelled) return;
+        if (!token) {
+          if (revalidateOfflineLaunch) {
+            onSessionExpired?.();
+            return;
+          }
+          dispatch({ type: 'bearer-failed' });
           return;
         }
-        if (token) {
-          dispatch({ type: 'bearer-ready' });
+        if (!claimsMatchAccess(token, access)) {
+          dispatch({ type: 'bearer-failed' });
           return;
         }
+        onOfflineLaunchValidated?.();
+        dispatch({ type: 'bearer-ready' });
+        return;
       } catch {
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
       }
       dispatch({ type: 'bearer-failed' });
     };
@@ -145,7 +188,17 @@ export const useAccessSnapshotLifecycle = ({
     return () => {
       cancelled = true;
     };
-  }, [access, currentAccessKey, getToken, isLoaded, retryCount]);
+  }, [
+    access,
+    currentAccessKey,
+    getToken,
+    isLoaded,
+    offline,
+    onOfflineLaunchValidated,
+    onSessionExpired,
+    revalidateOfflineLaunch,
+    retryCount,
+  ]);
 
   return {
     isReady,

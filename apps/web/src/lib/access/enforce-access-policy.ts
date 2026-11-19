@@ -1,5 +1,6 @@
 import { redirect } from '@tanstack/react-router';
 import { createIsomorphicFn } from '@tanstack/react-start';
+import { isBrowserOffline } from '@/lib/offline/browser-online';
 import type { RouterContext } from '@/router';
 import { getRequestAccess } from './resolve.server';
 import { resolveAccessNavigation } from './access-state';
@@ -15,6 +16,15 @@ export const enforceAccessPolicy = async (
   locationHref: string
 ) => {
   if (!import.meta.env.SSR && !context.identityLoaded) {
+    return;
+  }
+
+  // Sign-in needs the network. Offline with no household stays on the fallback.
+  if (
+    !import.meta.env.SSR &&
+    isBrowserOffline() &&
+    context.access.status === 'signed-out'
+  ) {
     return;
   }
 

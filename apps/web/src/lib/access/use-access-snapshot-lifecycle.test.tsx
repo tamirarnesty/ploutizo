@@ -1,5 +1,5 @@
 import './working-set-cleanup';
-import { renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { accessKey } from './access-key';
 import {
@@ -22,6 +22,8 @@ vi.mock('@/lib/persistence/browser-persistence', async () => {
       calls.workingSetIds.push(registry.getActiveWorkingSet().id);
       return Promise.resolve();
     },
+    currentBrowserPersistence: () => Promise.resolve(null),
+    trackBrowserPersistenceRelease: () => undefined,
   };
 });
 
@@ -111,5 +113,51 @@ describe('useAccessSnapshotLifecycle browser persistence', () => {
       workingSetBeforeSwitch + 1,
       workingSetBeforeSwitch + 2,
     ]);
+  });
+
+  it('opens a remembered household offline without calling Clerk or wiping', () => {
+    const token = vi.fn(() => Promise.resolve<string | null>(null));
+    const { result } = renderHook(() =>
+      useAccessSnapshotLifecycle({
+        isLoaded: true,
+        access: alexInHouseholdA,
+        currentAccessKey: accessKey(alexInHouseholdA),
+        getToken: token,
+        retryCount: 0,
+        offline: true,
+      })
+    );
+
+    expect(calls.accesses).toEqual([alexInHouseholdA]);
+    expect(token).not.toHaveBeenCalled();
+    expect(result.current.isReady).toBe(true);
+    expect(result.current.bearerError).toBe(false);
+  });
+
+  it('treats a missing token after an offline launch as an expired session', async () => {
+    const onSessionExpired = vi.fn();
+    const token = vi.fn(() => Promise.resolve<string | null>(null));
+    const viewed = renderHook(
+      (props: { offline: boolean }) =>
+        useAccessSnapshotLifecycle({
+          isLoaded: true,
+          access: alexInHouseholdA,
+          currentAccessKey: accessKey(alexInHouseholdA),
+          getToken: token,
+          retryCount: 0,
+          offline: props.offline,
+          revalidateOfflineLaunch: !props.offline,
+          onSessionExpired,
+        }),
+      { initialProps: { offline: true } }
+    );
+
+    expect(onSessionExpired).not.toHaveBeenCalled();
+    viewed.rerender({ offline: false });
+
+    await waitFor(() => {
+      expect(onSessionExpired).toHaveBeenCalledOnce();
+    });
+    expect(calls.accesses).toEqual([alexInHouseholdA]);
   });
 });

@@ -7,6 +7,8 @@ import {
   createStaleWorkingSetError,
 } from '@/lib/access/working-set-registry';
 import type { WorkingSetScope } from '@/lib/access/working-set-registry';
+import { createOfflineWriteUnavailableError } from '@/lib/offline/offline-copy';
+import { isBrowserOffline } from '@/lib/offline/browser-online';
 import { createHouseholdBearerUnavailableError } from '@/lib/queryClient';
 import { whileHouseholdBearerPending } from './household-query-enabled';
 import type {
@@ -159,6 +161,9 @@ export const useHouseholdMutation = <
       }
     },
     mutationFn: (variables, mutateContext) => {
+      if (isBrowserOffline()) {
+        throw createOfflineWriteUnavailableError();
+      }
       if (!householdReady) {
         throw createHouseholdBearerUnavailableError();
       }

@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { accountSchema, dataEnvelope } from '@ploutizo/validators';
 import type { Account } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
+import { useOfflineReadableQuery } from '@/lib/offline/offline-query';
+import { readAccounts } from '@/lib/offline/offline-read-store';
 import { apiFetch } from '@/lib/queryClient';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -32,6 +34,7 @@ export const accountsQueryOptions = (includeArchived = false) =>
 
 export const useGetAccounts = (
   includeArchived = false
-): UseQueryResult<Account[]> => {
-  return useHouseholdQuery(accountsQueryOptions(includeArchived));
+): UseQueryResult<Account[]> & { offlineUnavailable: boolean } => {
+  const query = useHouseholdQuery(accountsQueryOptions(includeArchived));
+  return useOfflineReadableQuery(query, () => readAccounts(includeArchived));
 };
