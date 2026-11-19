@@ -10,6 +10,7 @@ export interface CardBalancesGridProps {
   rows: CardBalanceRowViewModel[];
   isLoading: boolean;
   isError: boolean;
+  unavailable?: boolean;
   onSettleClick: CardBalancesSettleClickHandler;
   className?: string;
 }

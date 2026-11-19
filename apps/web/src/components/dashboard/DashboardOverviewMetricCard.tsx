@@ -17,7 +17,9 @@ import type { UseQueryResult } from '@tanstack/react-query';
 export type DashboardOverviewQueryState = Pick<
   UseQueryResult<GetDashboardOverviewResponse>,
   'data' | 'isError' | 'isFetching' | 'isPending'
->;
+> & {
+  offlineUnavailable?: boolean;
+};
 
 type DashboardOverviewMetricCardProps = {
   title: string;
@@ -45,13 +47,15 @@ export const DashboardOverviewMetricCard = ({
   className,
 }: DashboardOverviewMetricCardProps) => {
   const { data } = query;
-  const { showError, isBusy } = getDashboardQueryLiveState(query);
+  const { showError, isBusy, offlineUnavailable } =
+    getDashboardQueryLiveState(query);
 
   return (
     <DashboardCard
       title={title}
       header={data && header ? header(data) : null}
       isBusy={isBusy}
+      unavailable={offlineUnavailable}
       error={showError ? `Couldn’t load ${label}.` : undefined}
       className={className}
     >

@@ -23,6 +23,7 @@ type DashboardHeaderProps = {
   onRefresh: () => void;
   /** True while any dashboard data is loading; disables Refresh. */
   isRefreshing: boolean;
+  offline?: boolean;
 };
 
 /** One Refresh for the whole page — individual cards never own a refresh control. */
@@ -33,6 +34,7 @@ export const DashboardHeader = ({
   onApplyCustomRange,
   onRefresh,
   isRefreshing,
+  offline = false,
 }: DashboardHeaderProps) => (
   <PageHeader
     title="Dashboard"
@@ -55,7 +57,7 @@ export const DashboardHeader = ({
                 className="shrink-0"
                 // Keeps hover and focus while disabled, so the tooltip still shows.
                 focusableWhenDisabled
-                disabled={isRefreshing}
+                disabled={isRefreshing || offline}
                 onClick={onRefresh}
               />
             }
@@ -68,7 +70,9 @@ export const DashboardHeader = ({
               )}
             />
           </TooltipTrigger>
-          <TooltipContent>Refresh</TooltipContent>
+          <TooltipContent>
+            {offline ? 'Reconnect to refresh' : 'Refresh'}
+          </TooltipContent>
         </Tooltip>
       </>
     }

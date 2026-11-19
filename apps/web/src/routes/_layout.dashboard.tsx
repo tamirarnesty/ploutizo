@@ -10,6 +10,8 @@ import {
   selectionFromDashboardSearch,
 } from '@ploutizo/utils/dashboard-period';
 import { isHouseholdLoaderReady } from '@/lib/access/household-loader-ready';
+import { isBrowserOffline } from '@/lib/offline/browser-online';
+import { hydrateOfflineRead } from '@/lib/offline/offline-collections';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { dashboardOverviewQueryOptions } from '@/lib/data-access/dashboard';
 import { householdMembersQueryOptions } from '@/lib/data-access/household';
@@ -59,6 +61,10 @@ export const Route = createFileRoute('/_layout/dashboard')({
   },
   loader: async ({ context }) => {
     if (!(await isHouseholdLoaderReady(context))) {
+      return;
+    }
+    if (isBrowserOffline()) {
+      await hydrateOfflineRead();
       return;
     }
     const period = resolveDashboardPeriod(context.periodSelection, new Date());

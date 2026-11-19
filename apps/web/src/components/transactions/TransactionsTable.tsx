@@ -23,6 +23,7 @@ import {
 import { useEffectiveTablePageSize } from '@/hooks/useEffectiveTablePageSize';
 import { usePreloadLucideIcons } from '@/components/categories/usePreloadLucideIcons';
 import { ConfirmDestructiveDialog } from '@/components/ConfirmDestructiveDialog';
+import { OfflineUnavailable } from '@/lib/offline/OfflineUnavailable';
 import { useTransactionColumnLayout } from './useTransactionColumnLayout';
 import { buildColumns } from './TransactionColumns';
 import { TransactionRowActionMenuItems } from './TransactionRowActionMenus';
@@ -37,6 +38,8 @@ interface TransactionsTableProps {
   transactions: TransactionRow[];
   total: number;
   isLoading: boolean;
+  offlineUnavailable?: boolean;
+  writesBlocked?: boolean;
   page: number;
   limit: number;
   sort: TransactionSearch['sort'];
@@ -55,6 +58,8 @@ export const TransactionsTable = ({
   transactions,
   total,
   isLoading,
+  offlineUnavailable = false,
+  writesBlocked = false,
   page,
   limit,
   sort,
@@ -95,8 +100,8 @@ export const TransactionsTable = ({
   usePreloadLucideIcons(categoryIcons);
 
   const columns = useMemo(
-    () => buildColumns(setDeleteId, onEdit, onOpenOriginal),
-    [setDeleteId, onEdit, onOpenOriginal]
+    () => buildColumns(setDeleteId, onEdit, onOpenOriginal, writesBlocked),
+    [setDeleteId, onEdit, onOpenOriginal, writesBlocked]
   );
 
   const {
@@ -128,14 +133,18 @@ export const TransactionsTable = ({
   const renderRowContextMenu = useCallback(
     (transaction: TransactionRow) => (
       <TransactionRowActionMenuItems
-        actions={getTransactionRowActions(transaction, {
-          onEdit,
-          onDelete: setDeleteId,
-        })}
+        actions={getTransactionRowActions(
+          transaction,
+          {
+            onEdit,
+            onDelete: setDeleteId,
+          },
+          writesBlocked
+        )}
         MenuItem={ContextMenuItem}
       />
     ),
-    [onEdit]
+    [onEdit, writesBlocked]
   );
 
   const table = useTable({
@@ -176,6 +185,10 @@ export const TransactionsTable = ({
       onSortChange(col.id, col.desc ? 'desc' : 'asc');
     },
   });
+
+  if (offlineUnavailable) {
+    return <OfflineUnavailable className="rounded-lg border border-border" />;
+  }
 
   // Empty states (D-24, D-25) — rendered before DataGrid
   if (!isLoading && transactions.length === 0) {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { setBrowserOnlineForTests } from '@/lib/offline/browser-online';
 import { enforceAccessPolicy } from './enforce-access-policy';
 import {
   resolveAccessNavigation,
@@ -95,6 +96,18 @@ describe('enforceAccessPolicy', () => {
         '/accounts'
       )
     ).resolves.toBeUndefined();
+  });
+
+  it('does not send an offline visitor to sign-in', async () => {
+    setBrowserOnlineForTests(false);
+    await expect(
+      enforceAccessPolicy(
+        { access: signedOut, identityLoaded: true },
+        'active-household',
+        '/dashboard'
+      )
+    ).resolves.toBeUndefined();
+    setBrowserOnlineForTests(null);
   });
 
   it('redirects a signed-in visitor off a guest route before bearer readiness', async () => {

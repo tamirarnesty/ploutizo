@@ -1,6 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
 import type { RouterContext } from '@/router';
 import { isHouseholdLoaderReady } from '@/lib/access/household-loader-ready';
+import { isBrowserOffline } from '@/lib/offline/browser-online';
+import { hydrateOfflineRead } from '@/lib/offline/offline-collections';
 import { accountsQueryOptions } from '@/lib/data-access/accounts';
 import { categoriesQueryOptions } from '@/lib/data-access/categories';
 import { householdMembersQueryOptions } from '@/lib/data-access/household';
@@ -25,6 +27,10 @@ const loadTransactions = async (
     ensureTransactionColumnLayoutHydrated(),
   ]);
   if (!isReady) {
+    return;
+  }
+  if (isBrowserOffline()) {
+    await hydrateOfflineRead();
     return;
   }
   const limit = readStoredPageSize('transactions');

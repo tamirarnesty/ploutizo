@@ -45,7 +45,8 @@ const isInternalType = (t: string) =>
 export const buildColumns = (
   setDeleteId: (id: string) => void,
   onEdit: (transaction: TransactionRow) => void,
-  onOpenOriginal: (id: string) => void
+  onOpenOriginal: (id: string) => void,
+  writesBlocked = false
 ): ColumnDef<DataGridFeatures, TransactionRow>[] => {
   const handlers = { onEdit, onDelete: setDeleteId };
   const core = createCoreTransactionColumnDefs({
@@ -194,14 +195,15 @@ export const buildColumns = (
       },
     },
     core.amount,
-    actionsColumn(handlers),
+    actionsColumn(handlers, writesBlocked),
   ];
 };
 
 // ReUI's drag header reads `enableColumnOrdering` off the column def. It is
 // not a TanStack option, so the flag lives on this intersection.
 const actionsColumn = (
-  handlers: Parameters<typeof getTransactionRowActions>[1]
+  handlers: Parameters<typeof getTransactionRowActions>[1],
+  writesBlocked: boolean
 ): ColumnDef<DataGridFeatures, TransactionRow> & {
   enableColumnOrdering: false;
 } => ({
@@ -224,7 +226,7 @@ const actionsColumn = (
   },
   cell: ({ row }) => (
     <TransactionRowActionsDropdown
-      actions={getTransactionRowActions(row.original, handlers)}
+      actions={getTransactionRowActions(row.original, handlers, writesBlocked)}
     />
   ),
 });

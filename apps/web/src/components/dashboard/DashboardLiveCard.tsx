@@ -16,6 +16,7 @@ type DashboardLiveCardProps = {
   action?: ReactNode;
   isLoading: boolean;
   isError: boolean;
+  unavailable?: boolean;
   /** Replaces the card body when `isError`. */
   errorMessage: string;
   className?: string;
@@ -29,6 +30,7 @@ export const DashboardLiveCard = ({
   action,
   isLoading,
   isError,
+  unavailable = false,
   errorMessage,
   className,
   children,
@@ -68,6 +70,7 @@ export const DashboardLiveCard = ({
       </>
     }
     isBusy={isLoading}
+    unavailable={unavailable}
     error={isError ? errorMessage : undefined}
     className={className}
   >

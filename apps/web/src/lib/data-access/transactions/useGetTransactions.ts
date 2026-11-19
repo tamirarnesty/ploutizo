@@ -2,6 +2,8 @@ import { queryOptions } from '@tanstack/react-query';
 import type { DateRangeOperator } from '@ploutizo/types';
 import type { TransactionListResponse } from '@ploutizo/validators';
 import { useHouseholdQuery } from '@/lib/data-access/useHouseholdQuery';
+import { useOfflineReadableQuery } from '@/lib/offline/offline-query';
+import { readTransactionView } from '@/lib/offline/offline-read-store';
 import { fetchTransactions } from './queries';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -30,6 +32,9 @@ export const transactionsQueryOptions = (params: TransactionQueryParams) =>
 
 export const useGetTransactions = (
   params: TransactionQueryParams
-): UseQueryResult<TransactionListResponse> => {
-  return useHouseholdQuery(transactionsQueryOptions(params));
+): UseQueryResult<TransactionListResponse> & {
+  offlineUnavailable: boolean;
+} => {
+  const query = useHouseholdQuery(transactionsQueryOptions(params));
+  return useOfflineReadableQuery(query, () => readTransactionView(params));
 };

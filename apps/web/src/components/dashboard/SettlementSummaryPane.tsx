@@ -15,6 +15,7 @@ type SettlementSummaryPaneProps = {
   accounts: SettlementAccountRow[] | undefined;
   isError: boolean;
   isLoading: boolean;
+  unavailable?: boolean;
   members: OrgMember[];
   className?: string;
 };
@@ -23,6 +24,7 @@ export const SettlementSummaryPane = ({
   accounts,
   isError,
   isLoading,
+  unavailable = false,
   members,
   className,
 }: SettlementSummaryPaneProps) => {
@@ -40,6 +42,7 @@ export const SettlementSummaryPane = ({
       }
       isLoading={isLoading}
       isError={isError}
+      unavailable={unavailable}
       errorMessage={dashboardLiveCardErrorMessage('settlement summary')}
       className={className}
     >

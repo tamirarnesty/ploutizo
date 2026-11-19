@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useSyncExternalStore } from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { Button } from '@ploutizo/ui/components/button';
 import { Page } from '@ploutizo/ui/components/page';
@@ -10,6 +10,11 @@ import { useGetCategories } from '@/lib/data-access/categories';
 import { useGetHouseholdMembers } from '@/lib/data-access/household';
 import { useGetTags } from '@/lib/data-access/tags';
 import { useTablePageSize } from '@/hooks/persistedPageSize';
+import {
+  getBrowserOfflineServerSnapshot,
+  getBrowserOfflineSnapshot,
+  subscribeBrowserOnline,
+} from '@/lib/offline/browser-online';
 import { TransactionsTable } from './TransactionsTable';
 import { TransactionSheet } from './TransactionSheet';
 import { TransactionsFilterBar } from './TransactionsFilterBar';
@@ -28,9 +33,16 @@ export const Transactions = () => {
 
   // Fire ALL queries at top level — no waterfalls (vercel-react-best-practices)
   const transactionQueryParams = buildTransactionQueryParams(search, limit);
-  const { data: txData, isLoading } = useGetTransactions(
-    transactionQueryParams
+  const offline = useSyncExternalStore(
+    subscribeBrowserOnline,
+    getBrowserOfflineSnapshot,
+    getBrowserOfflineServerSnapshot
   );
+  const {
+    data: txData,
+    isLoading,
+    offlineUnavailable,
+  } = useGetTransactions(transactionQueryParams);
 
   const { data: accounts } = useGetAccounts();
   const { data: categories } = useGetCategories();
@@ -140,6 +152,7 @@ export const Transactions = () => {
               <Button
                 type="button"
                 className="shrink-0"
+                disabled={offline}
                 onClick={handleAddClick}
               >
                 Add transaction
@@ -158,6 +171,8 @@ export const Transactions = () => {
         transactions={transactions}
         total={total}
         isLoading={isLoading}
+        offlineUnavailable={offlineUnavailable}
+        writesBlocked={offline}
         page={page}
         limit={limit}
         sort={sort}

@@ -4,7 +4,9 @@ import type { UseQueryResult } from '@tanstack/react-query';
 export type DashboardQueryLiveStateInput = Pick<
   UseQueryResult<unknown>,
   'data' | 'isError' | 'isFetching' | 'isPending'
->;
+> & {
+  offlineUnavailable?: boolean;
+};
 
 export type DashboardQueryLiveStateOptions = {
   /**
@@ -20,9 +22,19 @@ export type DashboardQueryLiveStateOptions = {
  * shows the error.
  */
 export const getDashboardQueryLiveState = (
-  { data, isError, isFetching, isPending }: DashboardQueryLiveStateInput,
+  {
+    data,
+    isError,
+    isFetching,
+    isPending,
+    offlineUnavailable = false,
+  }: DashboardQueryLiveStateInput,
   { busyWhileRefetching = true }: DashboardQueryLiveStateOptions = {}
 ) => {
+  if (offlineUnavailable && data === undefined) {
+    return { showError: false, isBusy: false, offlineUnavailable: true };
+  }
+
   const showError = isError && data === undefined && !isFetching;
   const waitingForInitialData = data === undefined && (isPending || isFetching);
   const isBusy =
@@ -31,7 +43,7 @@ export const getDashboardQueryLiveState = (
       ? isFetching || data === undefined
       : waitingForInitialData);
 
-  return { showError, isBusy };
+  return { showError, isBusy, offlineUnavailable: false };
 };
 
 export const getCombinedDashboardQueryLiveState = (
@@ -45,5 +57,6 @@ export const getCombinedDashboardQueryLiveState = (
   return {
     showError: states.some((state) => state.showError),
     isBusy: states.some((state) => state.isBusy),
+    offlineUnavailable: states.some((state) => state.offlineUnavailable),
   };
 };
