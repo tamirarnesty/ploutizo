@@ -152,6 +152,7 @@ Routes pass the principal's active household id into query and service helpers a
 - Query/service helpers keep `orgId` as the persistence parameter name (ADR 0003). Domain-facing names stay signed-in member, active household, access state, access working set, and household principal.
 - Identity-provider widget chrome may wait for the identity client to load; that is presentation, not a second access model.
 - Working-set cleanups are registered in `working-set-cleanup.ts` (imported from `AccessProvider`), not via import side effects in feature modules.
+- The browser database follows the same cutoff. Switching signed-in member or active household closes it and opens the database for the new pair. Sign-out deletes every persisted browser database ([ADR 0009](./0009-browser-persistence-scope.md)).
 - Route loaders prefetch household data with native `ensureQueryData()` only when router context reports bearer-ready active-household access; otherwise queries wait on `useHouseholdQuery` readiness.
 - UI and data-access code use `useAccess()`; route guards and loaders use router `context`. Shared libraries do not import router for auth.
 - Non-UI code imports access subpaths directly (`working-set`, `enforce-access-policy`, etc.), not the `@/lib/access` barrel.
