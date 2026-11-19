@@ -52,7 +52,7 @@ export const DashboardHeader = ({
                 variant="ghost"
                 size="icon"
                 aria-label="Refresh"
-                className="shrink-0"
+                className="size-11 shrink-0 md:size-8"
                 // Keeps hover and focus while disabled, so the tooltip still shows.
                 focusableWhenDisabled
                 disabled={isRefreshing}

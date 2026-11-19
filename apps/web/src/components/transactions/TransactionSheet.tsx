@@ -85,9 +85,9 @@ export const TransactionSheet = ({
             type-specific field groups + split section */}
         <SheetContent
           side="right"
-          className="flex w-[560px] flex-col gap-0 sm:w-[560px]"
+          className="flex w-[min(100%,560px)]! max-w-[min(100%,560px)]! flex-col gap-0"
         >
-          <SheetHeader className="border-b border-border px-6 py-4">
+          <SheetHeader className="border-b border-border px-6 py-4 pe-14">
             <SheetTitle>
               {isEditing ? 'Edit transaction' : 'Add transaction'}
             </SheetTitle>

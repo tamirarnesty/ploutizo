@@ -12,22 +12,27 @@ export const TopBar = () => {
   const showClerkChrome = isLoaded && isSignedIn;
 
   return (
-    <header className="z-20 flex min-h-12 shrink-0 items-center gap-3 bg-sidebar px-4 pt-2">
-      {/* Mobile-only sidebar trigger — left of logo */}
-      <SidebarTrigger className="md:hidden" />
+    <header className="z-20 flex min-h-12 shrink-0 items-center gap-2 bg-sidebar px-3 pt-2 md:gap-3 md:px-4">
+      {/* Mobile-only sidebar trigger — left of logo. 44px tall for a thumb. */}
+      <SidebarTrigger className="size-11 md:hidden" />
       <AppLogo />
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex min-w-0 items-center gap-2">
         {showClerkChrome ? (
           <>
             <OrganizationSwitcher
               hidePersonal={true}
               afterCreateOrganizationUrl="/dashboard"
               afterSelectOrganizationUrl="/dashboard"
+              appearance={{
+                elements: {
+                  rootBox: 'min-w-0',
+                  organizationSwitcherTrigger:
+                    'max-w-[9rem] px-2 sm:max-w-none',
+                },
+              }}
             />
             <Separator orientation="vertical" className="hidden sm:flex" />
-            <div className="hidden items-center sm:flex">
-              <UserButton />
-            </div>
+            <UserButton />
           </>
         ) : null}
       </div>

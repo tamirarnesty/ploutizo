@@ -46,6 +46,7 @@ const SidebarParentLink = ({
     <SidebarMenuButton
       isActive={isAppNavRouteActive(pathname, item.to)}
       tooltip={item.label}
+      className="h-11 md:h-8"
       render={<Link to={item.to} onClick={onNavigate} />}
     >
       <Icon />
@@ -102,6 +103,7 @@ const SidebarNavigationItem = ({
           <SidebarMenuSubItem key={to}>
             <SidebarMenuSubButton
               isActive={isAppNavRouteActive(pathname, to)}
+              className="h-11 md:h-7"
               render={<Link to={to} onClick={onNavigate} />}
             >
               <ChildIcon />
@@ -128,11 +130,7 @@ export const AppSidebar = () => {
   }, [isMobile, setOpenMobile]);
 
   return (
-    <Sidebar
-      collapsible="icon"
-      variant="inset"
-      className="top-10 h-[calc(100svh-2.5rem)]"
-    >
+    <Sidebar collapsible="icon" variant="inset">
       <SidebarHeader>
         <CommandPaletteTrigger />
       </SidebarHeader>

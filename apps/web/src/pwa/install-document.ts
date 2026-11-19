@@ -4,7 +4,8 @@ import type { MetaDescriptor } from '@tanstack/react-router';
 export const installMeta = [
   {
     name: 'viewport',
-    content: 'width=device-width, initial-scale=1',
+    content:
+      'width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content',
   },
   { name: 'mobile-web-app-capable', content: 'yes' },
   { name: 'apple-mobile-web-app-capable', content: 'yes' },

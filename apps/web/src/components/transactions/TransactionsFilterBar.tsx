@@ -116,7 +116,7 @@ export const TransactionsFilterBar = ({
           type="button"
           variant="outline"
           size="sm"
-          className="shrink-0 gap-1.5 md:hidden"
+          className="h-11 shrink-0 gap-1.5 px-3 md:hidden"
           onClick={() => setSheet({ open: true, focus: null })}
         >
           <ListFilterIcon className="size-3.5" aria-hidden="true" />

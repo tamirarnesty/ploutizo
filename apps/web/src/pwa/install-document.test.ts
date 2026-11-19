@@ -3,6 +3,7 @@ import { installLinks, installMeta } from './install-document';
 import { PWA_APP_NAME } from './pwa-brand';
 import {
   themeColorDark,
+  themeColorForScheme,
   themeColorLight,
   themeColorMetas,
 } from './theme-color';
@@ -13,7 +14,8 @@ describe('install document head', () => {
       expect.arrayContaining([
         {
           name: 'viewport',
-          content: 'width=device-width, initial-scale=1',
+          content:
+            'width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content',
         },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         {
@@ -48,5 +50,11 @@ describe('install document head', () => {
       themeColorDark,
     ]);
     expect(new Set(themeColorMetas.map((meta) => meta.media)).size).toBe(2);
+  });
+
+  it('matches the sidebar chrome the status bar sits on', () => {
+    expect(themeColorForScheme('light')).toBe('#fafaf9');
+    expect(themeColorForScheme('dark')).toBe('#1c1917');
+    expect(themeColorForScheme(undefined)).toBeNull();
   });
 });
