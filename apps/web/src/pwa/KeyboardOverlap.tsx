@@ -11,7 +11,12 @@ const OVERLAY_SELECTOR = [
 const applyKeyboardOverlap = () => {
   const viewport = window.visualViewport;
   const overlap = viewport
-    ? keyboardOverlapPx(window.innerHeight, viewport.height, viewport.offsetTop)
+    ? keyboardOverlapPx(
+        window.innerHeight,
+        viewport.height,
+        viewport.offsetTop,
+        viewport.scale
+      )
     : 0;
   document.documentElement.style.setProperty(
     '--keyboard-overlap',

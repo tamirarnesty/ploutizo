@@ -11,4 +11,8 @@ describe('keyboardOverlapPx', () => {
     expect(keyboardOverlapPx(800, 470, 0)).toBe(330);
     expect(keyboardOverlapPx(800, 500, 20)).toBe(280);
   });
+
+  it('ignores a shrunken visual viewport while the page is zoomed', () => {
+    expect(keyboardOverlapPx(800, 400, 0, 2)).toBe(0);
+  });
 });
