@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const persistence = vi.hoisted(() => {
   const listeners = new Set<() => void>();
   let subscriberCount = 0;
-  const cleanup = vi.fn(async () => undefined);
-  const closeDatabase = vi.fn(async () => undefined);
+  const cleanup = vi.fn(() => Promise.resolve());
+  const closeDatabase = vi.fn(() => Promise.resolve());
   const dispose = vi.fn();
 
   return {
@@ -25,9 +25,9 @@ const persistence = vi.hoisted(() => {
       listeners.clear();
       subscriberCount = 0;
       cleanup.mockReset();
-      cleanup.mockResolvedValue(undefined);
+      cleanup.mockImplementation(() => Promise.resolve());
       closeDatabase.mockReset();
-      closeDatabase.mockResolvedValue(undefined);
+      closeDatabase.mockImplementation(() => Promise.resolve());
       dispose.mockReset();
     },
   };
@@ -49,9 +49,10 @@ vi.mock('@tanstack/react-db', () => ({
 }));
 
 vi.mock('@tanstack/browser-db-sqlite-persistence', () => ({
-  openBrowserWASQLiteOPFSDatabase: async () => ({
-    close: persistence.closeDatabase,
-  }),
+  openBrowserWASQLiteOPFSDatabase: () =>
+    Promise.resolve({
+      close: persistence.closeDatabase,
+    }),
   BrowserCollectionCoordinator: class {
     getNodeId() {
       return 'node-1';
