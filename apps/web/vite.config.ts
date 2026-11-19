@@ -35,7 +35,11 @@ const config = defineConfig({
     ...ploutizoPwaPlugins(webRoot),
   ],
   optimizeDeps: {
-    exclude: ['@clerk/ui'],
+    exclude: [
+      '@clerk/ui',
+      // Prebundling rewrites the published OPFS worker URL and breaks wa-sqlite.
+      '@tanstack/browser-db-sqlite-persistence',
+    ],
   },
   resolve: {
     tsconfigPaths: true,

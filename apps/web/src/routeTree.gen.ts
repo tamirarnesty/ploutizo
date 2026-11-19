@@ -16,6 +16,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LayoutAccountsRouteImport } from './routes/_layout.accounts'
 import { Route as LayoutDashboardRouteImport } from './routes/_layout.dashboard'
 import { Route as LayoutImportRouteRouteImport } from './routes/_layout.import/route'
+import { Route as LayoutPersistenceSpikeRouteImport } from './routes/_layout.persistence-spike'
 import { Route as LayoutSettingsRouteRouteImport } from './routes/_layout.settings/route'
 import { Route as LayoutTransactionsRouteImport } from './routes/_layout.transactions'
 import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
@@ -62,6 +63,11 @@ const LayoutDashboardRoute = LayoutDashboardRouteImport.update({
 const LayoutImportRouteRoute = LayoutImportRouteRouteImport.update({
   id: '/import',
   path: '/import',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutPersistenceSpikeRoute = LayoutPersistenceSpikeRouteImport.update({
+  id: '/persistence-spike',
+  path: '/persistence-spike',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutSettingsRouteRoute = LayoutSettingsRouteRouteImport.update({
@@ -143,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof LayoutSettingsRouteRouteWithChildren
   '/accounts': typeof LayoutAccountsRoute
   '/dashboard': typeof LayoutDashboardRoute
+  '/persistence-spike': typeof LayoutPersistenceSpikeRoute
   '/transactions': typeof LayoutTransactionsRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
@@ -162,6 +169,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingRoute
   '/accounts': typeof LayoutAccountsRoute
   '/dashboard': typeof LayoutDashboardRoute
+  '/persistence-spike': typeof LayoutPersistenceSpikeRoute
   '/transactions': typeof LayoutTransactionsRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
@@ -184,6 +192,7 @@ export interface FileRoutesById {
   '/_layout/settings': typeof LayoutSettingsRouteRouteWithChildren
   '/_layout/accounts': typeof LayoutAccountsRoute
   '/_layout/dashboard': typeof LayoutDashboardRoute
+  '/_layout/persistence-spike': typeof LayoutPersistenceSpikeRoute
   '/_layout/transactions': typeof LayoutTransactionsRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
@@ -207,6 +216,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/accounts'
     | '/dashboard'
+    | '/persistence-spike'
     | '/transactions'
     | '/sign-in/$'
     | '/sign-up/$'
@@ -226,6 +236,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/accounts'
     | '/dashboard'
+    | '/persistence-spike'
     | '/transactions'
     | '/sign-in/$'
     | '/sign-up/$'
@@ -247,6 +258,7 @@ export interface FileRouteTypes {
     | '/_layout/settings'
     | '/_layout/accounts'
     | '/_layout/dashboard'
+    | '/_layout/persistence-spike'
     | '/_layout/transactions'
     | '/sign-in/$'
     | '/sign-up/$'
@@ -319,6 +331,13 @@ declare module '@tanstack/react-router' {
       path: '/import'
       fullPath: '/import'
       preLoaderRoute: typeof LayoutImportRouteRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/persistence-spike': {
+      id: '/_layout/persistence-spike'
+      path: '/persistence-spike'
+      fullPath: '/persistence-spike'
+      preLoaderRoute: typeof LayoutPersistenceSpikeRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/settings': {
@@ -468,6 +487,7 @@ interface LayoutRouteChildren {
   LayoutSettingsRouteRoute: typeof LayoutSettingsRouteRouteWithChildren
   LayoutAccountsRoute: typeof LayoutAccountsRoute
   LayoutDashboardRoute: typeof LayoutDashboardRoute
+  LayoutPersistenceSpikeRoute: typeof LayoutPersistenceSpikeRoute
   LayoutTransactionsRoute: typeof LayoutTransactionsRoute
 }
 
@@ -476,6 +496,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutSettingsRouteRoute: LayoutSettingsRouteRouteWithChildren,
   LayoutAccountsRoute: LayoutAccountsRoute,
   LayoutDashboardRoute: LayoutDashboardRoute,
+  LayoutPersistenceSpikeRoute: LayoutPersistenceSpikeRoute,
   LayoutTransactionsRoute: LayoutTransactionsRoute,
 }
 
