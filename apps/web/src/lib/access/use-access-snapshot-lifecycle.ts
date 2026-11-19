@@ -1,5 +1,9 @@
 import { useEffect, useLayoutEffect, useReducer, useRef } from 'react';
 import { hydrateOfflineRead } from '@/lib/offline/offline-collections';
+import {
+  clearRememberedHousehold,
+  writeRememberedHousehold,
+} from '@/lib/offline/remembered-household';
 import { syncBrowserPersistence } from '@/lib/persistence/browser-persistence';
 import { hasAccessIdentityChanged } from './access-key';
 import { claimsMatchAccess } from './bearer-claims';
@@ -126,6 +130,17 @@ export const useAccessSnapshotLifecycle = ({
     ) {
       syncedAccessKeyRef.current = currentAccessKey;
       void syncBrowserPersistence(access);
+      if (wipe) {
+        clearRememberedHousehold();
+      } else if (
+        !offline &&
+        access.status === 'signed-in-with-active-household'
+      ) {
+        writeRememberedHousehold({
+          signedInMemberId: access.signedInMemberId,
+          activeHouseholdId: access.activeHouseholdId,
+        });
+      }
     }
 
     if (access.status === 'signed-in-with-active-household') {

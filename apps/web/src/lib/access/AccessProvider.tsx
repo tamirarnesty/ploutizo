@@ -19,7 +19,6 @@ import {
   clearRememberedHousehold,
   readRememberedHousehold,
   subscribeRememberedHousehold,
-  writeRememberedHousehold,
 } from '@/lib/offline/remembered-household';
 import { AccessContext } from './access-context';
 import { accessKey } from './access-key';
@@ -95,6 +94,7 @@ export const AccessProvider = ({ children }: { children: ReactNode }) => {
 
   const handleSessionExpired = useCallback(() => {
     setExpiredSessionId(sessionId ?? null);
+    clearRememberedHousehold();
   }, [sessionId]);
   const handleOfflineLaunchValidated = useCallback(() => {
     sawOfflineHousehold.current = false;
@@ -111,20 +111,6 @@ export const AccessProvider = ({ children }: { children: ReactNode }) => {
     onSessionExpired: handleSessionExpired,
     onOfflineLaunchValidated: handleOfflineLaunchValidated,
   });
-
-  useEffect(() => {
-    if (!isLoaded || offline) return;
-    if (!expired && clerkAccess.status === 'signed-in-with-active-household') {
-      writeRememberedHousehold({
-        signedInMemberId: clerkAccess.signedInMemberId,
-        activeHouseholdId: clerkAccess.activeHouseholdId,
-      });
-      return;
-    }
-    if (expired || clerkAccess.status === 'signed-out') {
-      clearRememberedHousehold();
-    }
-  }, [isLoaded, offline, expired, clerkAccess]);
 
   const retryBearer = useCallback(() => {
     setRetryCount((count) => count + 1);
