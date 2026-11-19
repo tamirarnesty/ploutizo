@@ -36,6 +36,26 @@ let users = 0;
 let session: Promise<OpenedAccountsPersistence> | null = null;
 let closed: Promise<void> = Promise.resolve();
 
+const waitForSubscribersToClear = (collection: SpikeAccountCollection) =>
+  new Promise<void>((resolve) => {
+    if (collection.subscriberCount === 0) {
+      resolve();
+      return;
+    }
+
+    const onSubscribersChange = () => {
+      if (collection.subscriberCount > 0) return;
+      collection.off('subscribers:change', onSubscribersChange);
+      resolve();
+    };
+
+    collection.on('subscribers:change', onSubscribersChange);
+    if (collection.subscriberCount === 0) {
+      collection.off('subscribers:change', onSubscribersChange);
+      resolve();
+    }
+  });
+
 const openAccountsPersistence =
   async (): Promise<OpenedAccountsPersistence> => {
     assertBrowserPersistenceRuntime(import.meta.env.SSR);
@@ -81,6 +101,11 @@ const openAccountsPersistence =
       }),
       close: async () => {
         try {
+          // useLiveQuery drops its subscription after this effect cleanup.
+          // cleanup() while that count is above zero logs a Live Query error.
+          if (collection.subscriberCount > 0) {
+            await waitForSubscribersToClear(collection);
+          }
           await collection.cleanup();
         } finally {
           coordinator.dispose();

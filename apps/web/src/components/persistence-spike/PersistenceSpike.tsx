@@ -57,6 +57,11 @@ export const PersistenceSpike = ({ apiBlocked }: { apiBlocked: boolean }) => {
 
   useEffect(() => {
     setSpikeAccountsApiBlocked(apiBlocked);
+    setStatus('opening');
+    setOpenError(null);
+    // Unmount the previous live query. Its release is already waiting for
+    // that subscription to reach zero before the database closes.
+    setSession(null);
     let cancelled = false;
     let release: (() => Promise<void>) | undefined;
 
