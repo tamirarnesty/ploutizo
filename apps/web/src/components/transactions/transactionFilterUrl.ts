@@ -24,6 +24,7 @@ export const buildCleanSearch = (
   if (result.dateRange_op === 'between') delete result.dateRange_op;
   if (!result.importBatchId) delete result.importBatchId;
   if (!result.importOutcome) delete result.importOutcome;
+  if (result.create !== true) delete result.create;
   return result;
 };
 

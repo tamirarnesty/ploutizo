@@ -55,6 +55,8 @@ export type TransactionSearch = {
   importBatchId?: string;
   importOutcome?: 'created' | 'matched';
   search?: string;
+  /** App shortcut: open the new-transaction sheet. Not a list filter. */
+  create?: true;
 };
 
 export const TRANSACTION_LIST_FILTER_PARAMS = [
@@ -173,6 +175,8 @@ export const validateTransactionSearch = (
     result.importBatchId = importBatchId;
     result.importOutcome = importOutcome;
   }
+
+  if (search.create === true) result.create = true;
 
   return result;
 };

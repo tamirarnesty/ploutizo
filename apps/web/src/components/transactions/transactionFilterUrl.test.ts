@@ -39,6 +39,18 @@ describe('buildCleanSearch', () => {
     ).toEqual({ dateFrom: '2026-11-01', dateRange_op: 'after' });
   });
 
+  it('keeps the new-transaction shortcut and drops it once consumed', () => {
+    expect(buildCleanSearch({ page: 1, create: true })).toEqual({
+      create: true,
+    });
+    expect(
+      buildCleanSearch({ create: true, page: 2, type: 'expense' })
+    ).toEqual({ create: true, page: 2, type: 'expense' });
+    expect(
+      buildCleanSearch({ create: undefined, page: 2, type: 'expense' })
+    ).toEqual({ page: 2, type: 'expense' });
+  });
+
   it('keeps non-default sort, order and page', () => {
     expect(buildCleanSearch({ page: 2, sort: 'amount', order: 'asc' })).toEqual(
       { page: 2, sort: 'amount', order: 'asc' }
@@ -85,6 +97,10 @@ describe('clearFilterPatch', () => {
 describe('hasActiveFilters', () => {
   it('counts the text search as narrowing the list', () => {
     expect(hasActiveFilters({ search: 'coffee' })).toBe(true);
+  });
+
+  it('ignores the new-transaction shortcut', () => {
+    expect(hasActiveFilters({ create: true })).toBe(false);
   });
 
   it('counts each filter family', () => {

@@ -3,7 +3,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { installLinks } from './install-document';
-import { PWA_APP_NAME, PWA_MANIFEST } from './pwa-brand';
+import {
+  NEW_TRANSACTION_SHORTCUT,
+  PWA_APP_NAME,
+  PWA_MANIFEST,
+} from './pwa-brand';
 
 const publicDir = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -38,8 +42,24 @@ describe('web manifest', () => {
     );
   });
 
+  it('advertises a new-transaction shortcut inside the app scope', () => {
+    expect(manifest.shortcuts).toEqual([
+      {
+        name: NEW_TRANSACTION_SHORTCUT.name,
+        description: NEW_TRANSACTION_SHORTCUT.description,
+        url: NEW_TRANSACTION_SHORTCUT.url,
+        icons: PWA_MANIFEST.shortcuts[0].icons,
+      },
+    ]);
+    expect(manifest.shortcuts[0].url.startsWith(manifest.scope)).toBe(true);
+  });
+
   it('ships png icons at the sizes the manifest declares', () => {
-    for (const icon of manifest.icons) {
+    const icons = [
+      ...manifest.icons,
+      ...manifest.shortcuts.flatMap((shortcut) => shortcut.icons),
+    ];
+    for (const icon of icons) {
       const [width, height] = icon.sizes.split('x').map(Number);
       const bytes = readFileSync(path.join(publicDir, icon.src.slice(1)));
       expect(bytes.subarray(0, 8)).toEqual(

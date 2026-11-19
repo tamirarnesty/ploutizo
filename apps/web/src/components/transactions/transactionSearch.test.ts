@@ -1,4 +1,6 @@
+import { defaultParseSearch } from '@tanstack/react-router';
 import { describe, expect, it } from 'vitest';
+import { NEW_TRANSACTION_SHORTCUT } from '@/pwa/pwa-brand';
 import {
   buildTransactionQueryParams,
   validateTransactionSearch,
@@ -118,6 +120,22 @@ describe('validateTransactionSearch', () => {
     }
   });
 
+  it('keeps the new-transaction shortcut and drops other create values', () => {
+    const shortcutSearch = defaultParseSearch(
+      new URL(NEW_TRANSACTION_SHORTCUT.url, 'https://ploutizo.invalid').search
+    );
+    expect(validateTransactionSearch(shortcutSearch)).toEqual({
+      create: true,
+    });
+    expect(validateTransactionSearch({ create: true, page: 2 })).toEqual({
+      create: true,
+      page: 2,
+    });
+    expect(validateTransactionSearch({ create: false })).toEqual({});
+    expect(validateTransactionSearch({ create: 'true' })).toEqual({});
+    expect(validateTransactionSearch({ create: 1 })).toEqual({});
+  });
+
   it('keeps matching import batch and outcome params together', () => {
     expect(
       validateTransactionSearch({
@@ -138,6 +156,12 @@ describe('validateTransactionSearch', () => {
 });
 
 describe('buildTransactionQueryParams', () => {
+  it('leaves the new-transaction shortcut out of the list query', () => {
+    expect(
+      buildTransactionQueryParams({ create: true }, 25)
+    ).not.toHaveProperty('create');
+  });
+
   it('applies defaults and maps import link fields', () => {
     expect(buildTransactionQueryParams({}, 25)).toEqual({
       page: 1,

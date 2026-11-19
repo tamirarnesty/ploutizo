@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { Button } from '@ploutizo/ui/components/button';
 import { Page } from '@ploutizo/ui/components/page';
@@ -10,6 +10,7 @@ import { useGetCategories } from '@/lib/data-access/categories';
 import { useGetHouseholdMembers } from '@/lib/data-access/household';
 import { useGetTags } from '@/lib/data-access/tags';
 import { useTablePageSize } from '@/hooks/persistedPageSize';
+import { canOpenNewTransaction } from '@/pwa/new-transaction-shortcut';
 import { TransactionsTable } from './TransactionsTable';
 import { TransactionSheet } from './TransactionSheet';
 import { TransactionsFilterBar } from './TransactionsFilterBar';
@@ -52,6 +53,24 @@ export const Transactions = () => {
 
   const [sheetOpen, setSheetOpen] = useState<boolean>(false);
   const [selectedTx, setSelectedTx] = useState<TransactionRow | null>(null);
+  const consumedCreate = useRef(false);
+
+  useEffect(() => {
+    if (search.create !== true) {
+      consumedCreate.current = false;
+      return;
+    }
+    if (consumedCreate.current || !canOpenNewTransaction()) return;
+
+    consumedCreate.current = true;
+    setSelectedTx(null);
+    setSheetOpen(true);
+    void navigate({
+      to: '/transactions',
+      search: (prev) => buildCleanSearch({ ...prev, create: undefined }),
+      replace: true,
+    });
+  }, [navigate, search.create]);
 
   const handleClearAllNarrowing = useCallback(() => {
     void navigate({
