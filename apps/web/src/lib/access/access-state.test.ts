@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { NEW_TRANSACTION_SHORTCUT } from '@/pwa/pwa-brand';
 import {
   resolveAccessNavigation,
   resolveAccessRedirect,
@@ -147,6 +148,29 @@ describe('resolveAccessNavigation', () => {
       to: '/sign-in/$',
       search: { redirect: '/accounts' },
     });
+  });
+
+  it('sends a signed-out shortcut launch through sign-in and back to the sheet', () => {
+    expect(
+      resolveAccessNavigation(
+        signedOut,
+        'active-household',
+        NEW_TRANSACTION_SHORTCUT.url
+      )
+    ).toEqual({
+      to: '/sign-in/$',
+      search: { redirect: NEW_TRANSACTION_SHORTCUT.url },
+    });
+  });
+
+  it('sends a shortcut launch without a household to onboarding', () => {
+    expect(
+      resolveAccessNavigation(
+        signedInNoHousehold,
+        'active-household',
+        NEW_TRANSACTION_SHORTCUT.url
+      )
+    ).toEqual({ to: '/onboarding' });
   });
 
   it('omits an external return path when sending a signed-out visitor to sign-in', () => {

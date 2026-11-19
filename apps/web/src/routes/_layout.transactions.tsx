@@ -50,7 +50,12 @@ export const Route = createFileRoute('/_layout/transactions')({
     },
   },
   validateSearch: validateTransactionSearch,
-  loaderDeps: ({ search }) => search,
+  // `create` only opens the sheet. Keep it out of the loader key so consuming
+  // the shortcut does not refetch the list.
+  loaderDeps: ({ search }) => {
+    const { create: _create, ...listSearch } = search;
+    return listSearch;
+  },
   loader: ({ context, deps: search }) => loadTransactions(context, search),
   component: Transactions,
 });

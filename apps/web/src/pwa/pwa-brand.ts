@@ -13,6 +13,13 @@ export const PWA_MASKABLE_BACKGROUND = {
 
 export const PWA_PUBLIC_ICON_DIR = '/pwa';
 
+/** Manifest shortcut that opens the transactions page into the create sheet. */
+export const NEW_TRANSACTION_SHORTCUT = {
+  name: 'New transaction',
+  description: 'Add a transaction',
+  url: '/transactions?create=true',
+} as const;
+
 export const PWA_MANIFEST_ICON_SPECS = [
   {
     file: 'icon-192.png',
@@ -50,4 +57,16 @@ export const PWA_MANIFEST = {
     type: 'image/png',
     purpose: icon.purpose,
   })),
+  shortcuts: [
+    {
+      ...NEW_TRANSACTION_SHORTCUT,
+      icons: PWA_MANIFEST_ICON_SPECS.filter(
+        (icon) => icon.purpose === 'any'
+      ).map((icon) => ({
+        src: `${PWA_PUBLIC_ICON_DIR}/${icon.file}`,
+        sizes: icon.sizes,
+        type: 'image/png' as const,
+      })),
+    },
+  ],
 } as const;
